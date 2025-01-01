@@ -3,112 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Candy Sort Puzzle Solver</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f0f0f0;
-        }
-
-        .game-container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .tubes-container {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin: 20px 0;
-        }
-
-        .tube {
-            width: 60px;
-            height: 240px;
-            background: #eee;
-            border: 2px solid #333;
-            border-radius: 0 0 20px 20px;
-            display: flex;
-            flex-direction: column-reverse;
-            padding: 5px;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .tube.selected {
-            border-color: #007bff;
-            box-shadow: 0 0 10px rgba(0,123,255,0.5);
-        }
-
-        .candy {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            margin: 2px auto;
-            border: 2px solid rgba(0,0,0,0.2);
-        }
-
-        .controls {
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        button {
-            padding: 10px 20px;
-            margin: 0 10px;
-            font-size: 16px;
-            cursor: pointer;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-        }
-
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .color-picker {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-        }
-
-        .color-option {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid rgba(0,0,0,0.2);
-        }
-
-        .color-option.selected {
-            border-color: #007bff;
-            box-shadow: 0 0 5px rgba(0,123,255,0.5);
-        }
-
-        .solution-steps {
-            margin-top: 20px;
-            padding: 10px;
-            background: #fff;
-            border-radius: 5px;
-            display: none;
-        }
-
-        .step {
-            margin: 5px 0;
-            padding: 5px;
-            background: #f8f9fa;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="message-container" id="message-container"></div>
     <div class="game-container">
         <h1 style="text-align: center">Candy Sort Puzzle</h1>
         
@@ -229,31 +127,50 @@
             renderTubes();
         }
 
+        function showMessage(message, type = 'error') {
+            const messageContainer = document.getElementById('message-container');
+            messageContainer.textContent = message;
+            messageContainer.className = `message ${type}`;
+            messageContainer.style.display = 'block';
+            setTimeout(() => {
+                messageContainer.style.display = 'none';
+            }, 3000);
+        }
+
         function solvePuzzle() {
             // Convert tubes to numeric format for solver
             const numericTubes = tubes.map(tube => 
                 tube.map(color => colors.indexOf(color) + 1)
             );
 
+            console.log('Sending tubes to solver:', numericTubes);
+            
             // Send to PHP solver
-            fetch('solve_puzzle.php', {
+            fetch('solve-puzzle.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({tubes: numericTubes})
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Received response:', response);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(solution => {
-                if (solution.moves) {
+                console.log('Solver response:', solution);
+                if (solution.moves && solution.moves.length > 0) {
                     displaySolution(solution.moves);
                 } else {
-                    alert('No solution found!');
+                    showMessage('No solution found!', 'error');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error solving puzzle!');
+                showMessage('Error solving puzzle!', 'error');
             });
         }
 
